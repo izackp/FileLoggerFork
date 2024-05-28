@@ -2,6 +2,7 @@ package abbasi.android.filelogger.sample
 
 import abbasi.android.filelogger.FileLogger
 import abbasi.android.filelogger.config.Config
+import abbasi.android.filelogger.config.RetentionPolicy
 import abbasi.android.filelogger.util.FileIntent
 import android.content.Intent
 import android.os.Build
@@ -24,6 +25,7 @@ class MainActivity : AppCompatActivity() {
                 val config = Config.Builder(it.path)
                     .setDefaultTag("TAG")
                     .setLogcatEnable(true)
+                    .setRetentionPolicy(RetentionPolicy.TimeToLive(durationInMillis = 1000 * 60 * 1))
                     .setStartupData(
                         mapOf(
                             "App Version" to "${System.currentTimeMillis()}",
@@ -37,7 +39,7 @@ class MainActivity : AppCompatActivity() {
                         )
                     ).build()
 
-                FileLogger.init(config)
+                FileLogger.init(this, config)
             }
         }
 

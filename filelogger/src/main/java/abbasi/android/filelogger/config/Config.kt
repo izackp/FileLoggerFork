@@ -16,6 +16,7 @@ class Config private constructor(
     val logcatEnable: Boolean,
     val dataFormatterPattern: String,
     val startupData: Map<String, String>?,
+    val retentionPolicy: RetentionPolicy?,
 ) {
 
     class Builder(private val directory: String) {
@@ -23,10 +24,12 @@ class Config private constructor(
         private var logcatEnable: Boolean = LOGCAT_ENABLE
         private var dataFormatterPattern: String = DEFAULT_PATTERN
         private var startupData: Map<String, String>? = null
+        private var retentionPolicy: RetentionPolicy? = null
 
         fun setDefaultTag(defaultTag: String) = apply { this.defaultTag = defaultTag }
         fun setLogcatEnable(logcatEnable: Boolean) = apply { this.logcatEnable = logcatEnable }
         fun setStartupData(startupData: Map<String, String>?) = apply { this.startupData = startupData }
+        fun setRetentionPolicy(retentionPolicy: RetentionPolicy) = apply { this.retentionPolicy = retentionPolicy }
 
         fun setDataFormatterPattern(pattern: String) = apply {
             this.dataFormatterPattern = pattern.replace("/", "-")
@@ -44,6 +47,7 @@ class Config private constructor(
             logcatEnable,
             dataFormatterPattern,
             startupData,
+            retentionPolicy,
         )
     }
 }

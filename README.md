@@ -12,6 +12,7 @@ The FileLogger is a library for saving logs on Files with custom-formatter on ba
 - Support INFO, ERROR, DEBUG, WARNING logging level
 - Compress and send logs(Email and messengers)
 - Startup logs
+- Retention Policy (Size, Count, Time to Live)
 
 ## TODO
 1. Add C++ NDK support
@@ -29,6 +30,7 @@ val config = Config.Builder(it.path)
     .setDefaultTag("TAG")
     .setLogcatEnable(true)
     .setDataFormatterPattern("dd-MM-yyyy-HH:mm:ss")
+    .setRetentionPolicy(RetentionPolicy.TimeToLive(durationInMillis = 1000 * 60 * 10)) // 10 min
     .setStartupData(
         mapOf(
             "App Version" to "${BuildConfig.VERSION}",

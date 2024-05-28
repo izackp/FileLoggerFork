@@ -6,16 +6,15 @@
 
 package abbasi.android.filelogger.file
 
-import abbasi.android.filelogger.config.Constance.Companion.DIRECTORY
 import abbasi.android.filelogger.time.FastDateFormat
 import android.util.Log
 import java.io.File
 import java.io.FileOutputStream
 import java.io.OutputStreamWriter
-import java.util.*
+import java.util.Locale
 
 internal class FileWriter(
-    private val directory: String,
+    logFileManager: LogFileManager,
     dataFormatterPattern: String,
     startLogs: Map<String, String>?,
 ) {
@@ -23,16 +22,14 @@ internal class FileWriter(
     private var dateFormat: FastDateFormat? = null
     private var logFile: File? = null
 
+    val openedFilePath
+        get() = logFile?.absolutePath
+
     init {
         dateFormat = FastDateFormat.getInstance(dataFormatterPattern, Locale.US)
         try {
-            val file = File(directory)
-            val logDir = File(file.absolutePath + DIRECTORY)
-            if (logDir.exists().not()) {
-                logDir.mkdirs()
-            }
-
-            logFile = File(logDir, "${dateFormat?.format(System.currentTimeMillis())}.txt")
+            val fileName = "${dateFormat?.format(System.currentTimeMillis())}.txt"
+            logFile = logFileManager.createLogFile(fileName)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -43,7 +40,7 @@ internal class FileWriter(
             streamWriter = OutputStreamWriter(stream).apply {
                 write("File logger started at ${dateFormat?.format(System.currentTimeMillis())}\n")
                 startLogs?.forEach {
-                    write("${it.key}: ${it.value} \n")
+                    write("${it.key}: ${it.value}\n")
                 }
                 write("\n\n")
                 flush()
@@ -61,17 +58,6 @@ internal class FileWriter(
             } catch (e: Exception) {
                 Log.e(javaClass.simpleName, "e:", e)
             }
-        }
-    }
-
-    fun deleteLogsDir() {
-        val currentFile = File(directory)
-        val logDir = File(currentFile.absolutePath + DIRECTORY)
-
-        logDir.listFiles()?.filter {
-            it.absolutePath != logFile?.absolutePath
-        }?.forEach {
-            it.delete()
         }
     }
 }

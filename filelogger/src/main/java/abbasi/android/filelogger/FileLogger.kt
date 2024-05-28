@@ -8,9 +8,12 @@ package abbasi.android.filelogger
 
 import abbasi.android.filelogger.config.Config
 import abbasi.android.filelogger.file.FileWriter
+import abbasi.android.filelogger.file.LogFileManager
 import abbasi.android.filelogger.file.LogLevel
+import abbasi.android.filelogger.file.RetentionPolicyChecker
 import abbasi.android.filelogger.threading.ThreadQueue
 import abbasi.android.filelogger.util.FileZipper
+import android.content.Context
 import android.util.Log
 import java.io.File
 
@@ -20,28 +23,41 @@ object FileLogger {
     private var isEnable: Boolean = true
 
     private var config: Config? = null
-    private val fileWriter: FileWriter? by lazy {
-        return@lazy config?.let {
-            return@let FileWriter(
-                it.directory,
-                it.dataFormatterPattern,
-                it.startupData
-            )
-        }
-    }
+    private lateinit var retentionChecker: RetentionPolicyChecker
+    private lateinit var logFileManager: LogFileManager
+    private lateinit var fileWriter: FileWriter
+
     private val fileZipper: FileZipper by lazy {
         FileZipper()
     }
 
     private var logQueue: ThreadQueue = ThreadQueue("LogQueue")
 
-    fun init(config: Config) {
+    fun init(context: Context, config: Config) {
         if (initialized) {
             return
         }
 
         this.config = config
+
+        logFileManager = LogFileManager(
+            context = context.applicationContext,
+            rootDir = config.directory
+        )
+
+        retentionChecker = RetentionPolicyChecker(logFileManager)
+
+        fileWriter = FileWriter(
+            logFileManager = logFileManager,
+            dataFormatterPattern = config.dataFormatterPattern,
+            startLogs = config.startupData
+        )
+
         initialized = true
+
+        config.retentionPolicy?.let {
+            retentionChecker(policy = it)
+        }
     }
 
     fun i(tag: String? = config?.defaultTag, msg: String) = checkBlock {
@@ -102,9 +118,9 @@ object FileLogger {
         tag: String? = config?.defaultTag,
         msg: String? = "",
         throwable: Throwable? = null
-    ) = fileWriter?.let { writer ->
+    ) = fileWriter.let { writer ->
         logQueue.postRunnable {
-            val stringBuilder = StringBuilder("$logLevel/$tag: $msg \n")
+            val stringBuilder = StringBuilder("$logLevel/$tag: $msg\n")
 
             throwable?.let { exception ->
                 exception.stackTrace.forEach { element ->
@@ -122,7 +138,7 @@ object FileLogger {
 
     fun deleteFiles() = checkBlock {
         i(msg = "FileLogger delete files called")
-        fileWriter?.deleteLogsDir()
+        logFileManager.deleteLogsDir(fileWriter.openedFilePath)
     }
 
     fun compressLogsInZipFile(
