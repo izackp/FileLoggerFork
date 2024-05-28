@@ -13,6 +13,7 @@ The FileLogger is a library for saving logs on Files with custom-formatter on ba
 - Compress and send logs(Email and messengers)
 - Startup logs
 - Retention Policy (Size, Count, Time to Live)
+- Log interception
 
 ## TODO
 1. Add C++ NDK support

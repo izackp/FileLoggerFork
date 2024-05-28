@@ -25,6 +25,7 @@ class MainActivity : AppCompatActivity() {
                 val config = Config.Builder(it.path)
                     .setDefaultTag("TAG")
                     .setLogcatEnable(true)
+                    .setLogInterceptor(AppLogInterceptor())
                     .setRetentionPolicy(RetentionPolicy.TimeToLive(durationInMillis = 1000 * 60 * 1))
                     .setStartupData(
                         mapOf(

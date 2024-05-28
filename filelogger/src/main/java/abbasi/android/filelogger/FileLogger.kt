@@ -20,7 +20,7 @@ import java.io.File
 object FileLogger {
 
     private var initialized = false
-    private var isEnable: Boolean = true
+    var isEnable: Boolean = true
 
     private var config: Config? = null
     private lateinit var retentionChecker: RetentionPolicyChecker
@@ -120,7 +120,11 @@ object FileLogger {
         throwable: Throwable? = null
     ) = fileWriter.let { writer ->
         logQueue.postRunnable {
-            val stringBuilder = StringBuilder("$logLevel/$tag: $msg\n")
+            val message = config?.logInterceptor?.intercept(
+                logLevel, tag.orEmpty(), msg.orEmpty(), throwable
+            ) ?: msg
+
+            val stringBuilder = StringBuilder("$logLevel/$tag: $message\n")
 
             throwable?.let { exception ->
                 exception.stackTrace.forEach { element ->
@@ -130,10 +134,6 @@ object FileLogger {
 
             writer.write(stringBuilder.toString())
         }
-    }
-
-    fun setEnable(isEnable: Boolean) {
-        this.isEnable = isEnable
     }
 
     fun deleteFiles() = checkBlock {
