@@ -2,6 +2,7 @@ package abbasi.android.filelogger.sample
 
 import abbasi.android.filelogger.FileLogger
 import abbasi.android.filelogger.config.Config
+import abbasi.android.filelogger.config.FileRotationStrategy
 import abbasi.android.filelogger.config.RetentionPolicy
 import abbasi.android.filelogger.util.FileIntent
 import android.content.Intent
@@ -21,27 +22,28 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         findViewById<Button>(R.id.init).setOnClickListener {
-            applicationContext.getExternalFilesDir(null)?.let {
-                val config = Config.Builder(it.path)
-                    .setDefaultTag("TAG")
-                    .setLogcatEnable(true)
-                    .setLogInterceptor(AppLogInterceptor())
-                    .setRetentionPolicy(RetentionPolicy.TimeToLive(durationInMillis = 1000 * 60 * 1))
-                    .setStartupData(
-                        mapOf(
-                            "App Version" to "${System.currentTimeMillis()}",
-                            "Device Application Id" to BuildConfig.APPLICATION_ID,
-                            "Device Version Code" to BuildConfig.VERSION_CODE.toString(),
-                            "Device Version Name" to BuildConfig.VERSION_NAME,
-                            "Device Build Type" to BuildConfig.BUILD_TYPE,
-                            "Device" to Build.DEVICE,
-                            "Device SDK" to Build.VERSION.SDK_INT.toString(),
-                            "Device Manufacturer" to Build.MANUFACTURER,
-                        )
-                    ).build()
+            val path = applicationContext.getExternalFilesDir(null)?.path ?: return@setOnClickListener
 
-                FileLogger.init(this, config)
-            }
+            val config = Config.Builder(path)
+                .setDefaultTag("TAG")
+                .setLogcatEnable(true)
+                .setLogInterceptor(AppLogInterceptor())
+                .setNewFileStrategy(FileRotationStrategy.TimeBased(intervalInMillis = 1000 * 60 * 60 * 24))
+                .setRetentionPolicy(RetentionPolicy.TimeToLive(durationInMillis = 1000 * 60 * 60))
+                .setStartupData(
+                    mapOf(
+                        "App Version" to "${System.currentTimeMillis()}",
+                        "Device Application Id" to BuildConfig.APPLICATION_ID,
+                        "Device Version Code" to BuildConfig.VERSION_CODE.toString(),
+                        "Device Version Name" to BuildConfig.VERSION_NAME,
+                        "Device Build Type" to BuildConfig.BUILD_TYPE,
+                        "Device" to Build.DEVICE,
+                        "Device SDK" to Build.VERSION.SDK_INT.toString(),
+                        "Device Manufacturer" to Build.MANUFACTURER,
+                    )
+                ).build()
+
+            FileLogger.init(this, config)
         }
 
         findViewById<Button>(R.id.writeNormalLog).setOnClickListener {

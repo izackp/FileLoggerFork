@@ -1,16 +1,22 @@
 package abbasi.android.filelogger.file
 
 import abbasi.android.filelogger.config.Constance.Companion.DIRECTORY
+import abbasi.android.filelogger.time.FastDateFormat
 import android.content.Context
 import java.io.File
 
 internal class LogFileManager(
     context: Context,
-    rootDir: String
+    rootDir: String,
+    private var dateFormat: FastDateFormat,
 ) {
 
     private val prefs = context.getSharedPreferences("log_metadata", Context.MODE_PRIVATE)
     private val logsDirectory: String = rootDir + DIRECTORY
+    private var currentFile: File? = null
+
+    var lastCreationTime: Long = 0
+
     val logFilesList
         get() = File(logsDirectory).listFiles()?.filter { it.isFile }
 
@@ -21,14 +27,15 @@ internal class LogFileManager(
         }
     }
 
-    fun createLogFile(fileName: String): File {
-        val logFile = File(logsDirectory, fileName)
-        if (logFile.exists()) {
-            return logFile
-        }
+    fun currentLogFile(): File {
+        val now = System.currentTimeMillis()
+        val fileName = "${dateFormat.format(now)}.txt"
 
+        val logFile = File(logsDirectory, fileName)
         logFile.createNewFile()
-        prefs.edit().putLong(fileName, System.currentTimeMillis()).apply()
+        prefs.edit().putLong(fileName, now).apply()
+        lastCreationTime = now
+        currentFile = logFile
 
         return logFile
     }
@@ -49,9 +56,9 @@ internal class LogFileManager(
         }
     }
 
-    fun deleteLogsDir(currentLogPath: String?) {
+    fun deleteLogsDir() {
         File(logsDirectory).listFiles()?.filter {
-            it.absolutePath != currentLogPath
+            it.absolutePath != currentFile?.absolutePath
         }?.forEach {
             it.delete()
         }

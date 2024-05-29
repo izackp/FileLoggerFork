@@ -19,6 +19,7 @@ class Config private constructor(
     val startupData: Map<String, String>?,
     val retentionPolicy: RetentionPolicy?,
     val logInterceptor: LogInterceptor?,
+    var fileRotationStrategy: FileRotationStrategy,
 ) {
 
     class Builder(private val directory: String) {
@@ -28,12 +29,31 @@ class Config private constructor(
         private var startupData: Map<String, String>? = null
         private var retentionPolicy: RetentionPolicy? = null
         private var logInterceptor: LogInterceptor? = null
+        private var fileRotationStrategy: FileRotationStrategy = FileRotationStrategy.None
 
-        fun setDefaultTag(defaultTag: String) = apply { this.defaultTag = defaultTag }
-        fun setLogcatEnable(logcatEnable: Boolean) = apply { this.logcatEnable = logcatEnable }
-        fun setStartupData(startupData: Map<String, String>?) = apply { this.startupData = startupData }
-        fun setRetentionPolicy(retentionPolicy: RetentionPolicy) = apply { this.retentionPolicy = retentionPolicy }
-        fun setLogInterceptor(logInterceptor: LogInterceptor) = apply { this.logInterceptor = logInterceptor }
+        fun setDefaultTag(defaultTag: String) = apply {
+            this.defaultTag = defaultTag
+        }
+
+        fun setLogcatEnable(logcatEnable: Boolean) = apply {
+            this.logcatEnable = logcatEnable
+        }
+
+        fun setStartupData(startupData: Map<String, String>?) = apply {
+            this.startupData = startupData
+        }
+
+        fun setRetentionPolicy(retentionPolicy: RetentionPolicy?) = apply {
+            this.retentionPolicy = retentionPolicy
+        }
+
+        fun setLogInterceptor(logInterceptor: LogInterceptor?) = apply {
+            this.logInterceptor = logInterceptor
+        }
+
+        fun setNewFileStrategy(fileRotationStrategy: FileRotationStrategy) = apply {
+            this.fileRotationStrategy = fileRotationStrategy
+        }
 
         fun setDataFormatterPattern(pattern: String) = apply {
             this.dataFormatterPattern = pattern.replace("/", "-")
@@ -52,7 +72,8 @@ class Config private constructor(
             dataFormatterPattern = dataFormatterPattern,
             startupData = startupData,
             retentionPolicy = retentionPolicy,
-            logInterceptor = logInterceptor
+            logInterceptor = logInterceptor,
+            fileRotationStrategy = fileRotationStrategy,
         )
     }
 }

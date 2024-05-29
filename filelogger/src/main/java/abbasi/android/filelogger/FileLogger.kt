@@ -7,15 +7,18 @@
 package abbasi.android.filelogger
 
 import abbasi.android.filelogger.config.Config
+import abbasi.android.filelogger.config.FileRotationStrategy
 import abbasi.android.filelogger.file.FileWriter
 import abbasi.android.filelogger.file.LogFileManager
 import abbasi.android.filelogger.file.LogLevel
 import abbasi.android.filelogger.file.RetentionPolicyChecker
 import abbasi.android.filelogger.threading.ThreadQueue
+import abbasi.android.filelogger.time.FastDateFormat
 import abbasi.android.filelogger.util.FileZipper
 import android.content.Context
 import android.util.Log
 import java.io.File
+import java.util.Locale
 
 object FileLogger {
 
@@ -26,6 +29,7 @@ object FileLogger {
     private lateinit var retentionChecker: RetentionPolicyChecker
     private lateinit var logFileManager: LogFileManager
     private lateinit var fileWriter: FileWriter
+    private lateinit var dateFormat: FastDateFormat
 
     private val fileZipper: FileZipper by lazy {
         FileZipper()
@@ -39,18 +43,19 @@ object FileLogger {
         }
 
         this.config = config
+        dateFormat = FastDateFormat.getInstance(config.dataFormatterPattern, Locale.US)
 
         logFileManager = LogFileManager(
             context = context.applicationContext,
-            rootDir = config.directory
+            rootDir = config.directory,
+            dateFormat = dateFormat,
         )
-
-        retentionChecker = RetentionPolicyChecker(logFileManager)
+        retentionChecker = RetentionPolicyChecker(fileManager = logFileManager)
 
         fileWriter = FileWriter(
-            logFileManager = logFileManager,
-            dataFormatterPattern = config.dataFormatterPattern,
-            startLogs = config.startupData
+            dateFormat = dateFormat,
+            logFile = logFileManager.currentLogFile(),
+            startLogs = config.startupData,
         )
 
         initialized = true
@@ -118,27 +123,46 @@ object FileLogger {
         tag: String? = config?.defaultTag,
         msg: String? = "",
         throwable: Throwable? = null
-    ) = fileWriter.let { writer ->
-        logQueue.postRunnable {
-            val message = config?.logInterceptor?.intercept(
-                logLevel, tag.orEmpty(), msg.orEmpty(), throwable
-            ) ?: msg
+    ) = logQueue.postRunnable {
+        if (!initialized) return@postRunnable
 
-            val stringBuilder = StringBuilder("$logLevel/$tag: $message\n")
+        val message = config?.logInterceptor?.intercept(
+            logLevel, tag.orEmpty(), msg.orEmpty(), throwable
+        ) ?: msg
 
-            throwable?.let { exception ->
-                exception.stackTrace.forEach { element ->
-                    stringBuilder.append("\t $element\n")
-                }
+        val stringBuilder = StringBuilder("$logLevel/$tag: $message\n")
+
+        throwable?.let { exception ->
+            exception.stackTrace.forEach { element ->
+                stringBuilder.append("\t $element\n")
             }
-
-            writer.write(stringBuilder.toString())
         }
+
+        openedFileWriter().write(stringBuilder.toString())
+    }
+
+    private fun openedFileWriter(): FileWriter {
+        val strategy = config?.fileRotationStrategy
+
+        if (strategy == null || strategy !is FileRotationStrategy.TimeBased) {
+            return fileWriter
+        }
+
+        if (System.currentTimeMillis() - logFileManager.lastCreationTime > strategy.intervalInMillis) {
+            fileWriter.close()
+            fileWriter = FileWriter(
+                dateFormat = dateFormat,
+                logFile = logFileManager.currentLogFile(),
+                startLogs = config?.startupData,
+            )
+        }
+
+        return fileWriter
     }
 
     fun deleteFiles() = checkBlock {
         i(msg = "FileLogger delete files called")
-        logFileManager.deleteLogsDir(fileWriter.openedFilePath)
+        logFileManager.deleteLogsDir()
     }
 
     fun compressLogsInZipFile(
