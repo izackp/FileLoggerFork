@@ -4,12 +4,13 @@ plugins {
 }
 
 android {
-    compileSdk 31
+    namespace "abbasi.android.filelogger.sample"
+    compileSdk 33
 
     defaultConfig {
         applicationId "abbasi.android.filelogger.sample"
         minSdk 16
-        targetSdk 31
+        targetSdk 33
         versionCode 1
         versionName "1.0"
 
