@@ -4,6 +4,7 @@ plugins {
 }
 
 android {
+    namespace "abbasi.android.filelogger"
     compileSdk 33
 
     defaultConfig {
